@@ -17,13 +17,15 @@ def build_label(data):
         label[label==i]=dict_x.get(i)
     return label.astype('float64')
 
-def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
+def data_preprocessing(data, percent=1, nan = "delete", normalize = True, is_test=False):
     """preprocessing data
     read in example:
     data = np.genfromtxt("./train.csv", skip_header=1, delimiter = ",")
+    :param percent: The columns which NAN rate exceeds precent will be deleted [0,1]
     :param data: original data from csv
     :param nan: method to deal with NAN value (delete,mean,median)
     :nomalize: whether normalize the data
+    :is_test: preprocess Train or Test data
     """
     #extract label
     if not is_test:
@@ -33,6 +35,12 @@ def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
     data[data == -999] = np.nan
     data[data == 0.0] = np.nan
     data = data.astype(np.float64)
+    delete = []
+    for i in range(0,data.shape[1]):
+        tmp_percent = sum(np.isnan(data[:,i]))/len(data[:,i])
+        if tmp_percent >= percent:
+            delete.append(i)   
+    data = np.delete(data, delete, axis = 1)
     if nan == "delete":
         delete = []
         for i in range(0,data.shape[1]):
@@ -280,8 +288,8 @@ def create_csv_submission(ids, y_pred, name):
 
 def predict_labels(weights, data):
     """Generates class predictions given weights, and a test data matrix"""
-    y_pred = np.dot(data, weights)
-    y_pred[np.where(y_pred <= 0)] = -1
-    y_pred[np.where(y_pred > 0)] = 1
+    y_pred = sigmoid(np.dot(data, weights))
+    y_pred[np.where(y_pred <= 0.5)] = -1
+    y_pred[np.where(y_pred > 0.5)] = 1
     
     return y_pred

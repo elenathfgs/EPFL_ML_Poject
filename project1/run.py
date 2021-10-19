@@ -7,16 +7,16 @@ import numpy as np
 # see experiment.ipynb for parameters choose details
 seed = 2021
 degree = 7
-lambda_ = 0.5
+lambda_ = 0.1
 k_fold = 5
 gamma = 1e-6
 max_iters=1500
 
 # load and preprocess data
+print("reading and preprocessing train data")
 data = np.genfromtxt("data/train.csv", skip_header=1, delimiter = ",", dtype="str")
-x, y = data_preprocessing(data, nan='mean')
+x, y = data_preprocessing(data,percent=0.5,nan="mean",normalize=True,is_test=False)
 # model training and evaluation
-
 # loss_te_sum = 0
 # for k in range(k_fold):
 #     print(f"fold {k}/{k_fold}")
@@ -46,9 +46,9 @@ loss_te = compute_loss_rlr(y_te, x_te, w, lambda_)
 
 # loss_te_avg = loss_te_sum / k_fold
 # print(f'model evaluation loss: {loss_te_avg}')
-
+print("reading and preprocessing test data")
 test_data = np.genfromtxt("data/test.csv", skip_header=1, delimiter = ",", dtype="str")
-x_te = data_preprocessing(test_data, nan='mean', is_test=True)
+x_te = data_preprocessing(test_data,percent=0.5,nan="mean",normalize=True,is_test=True)# model training and evaluation
 x_te = build_poly(x_te, degree)
 # pred = sigmoid(x_te.dot(w))
 # pred = [0 if x<0.5 else 1 for x in pred]
