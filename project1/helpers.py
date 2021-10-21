@@ -25,14 +25,18 @@ def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
     :param nan: method to deal with NAN value (delete,mean,median)
     :nomalize: whether normalize the data
     """
-    #extract label
-    if not is_test:
-        label = build_label(data)
+    #one-hot
+    classes = len(np.unique(data[:,22]))
+    targets = data[:,22].reshape(-1)
+    targets = targets.astype("int",copy=False)
+    one_hot_targets = np.eye(len(targets), classes)[targets]  
+    data = np.delete(data, 22, axis = 1)
+
     #missing value
-    data = data[:,2:].astype('float64')
     data[data == -999] = np.nan
     data[data == 0.0] = np.nan
     data = data.astype(np.float64)
+
     if nan == "delete":
         delete = []
         for i in range(0,data.shape[1]):
@@ -54,17 +58,16 @@ def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
             mean = np.mean(data[:,i])
             std = np.std(data[:,i])
             data[:,i] = (data[:,i]-mean) / std
-            min_value = min(data[:,i])
-            max_value = max(data[:,i])
-            data[:,i] = (data[:,i]-min_value)/(max_value-min_value)
+            # min_value = min(data[:,i])
+            # max_value = max(data[:,i])
+            # data[:,i] = (data[:,i]-min_value)/(max_value-min_value)
 
     
     if is_test:
         return data
 
-    X = data
-    y = label
-    return X,y
+    X = np.concatenate([data,one_hot_targets], axis = 1)
+    return X
 
 def split_data(x, y, ratio, seed=1):
     """
