@@ -8,34 +8,58 @@ import numpy as np
 # set hyper-parameters
 # see experiment.ipynb for parameters choose details
 seed = 2021
-degree = 6
-lambda_ = 0.1
+degree = 7
+lambda_ = 1e-4
 
 # load and preprocess data
 y, X, _ = load_csv_data("./data/train.csv")
-X = data_preprocessing(X, nan='mean')
-# x_tr, x_te, y_tr, y_te = split_data(X, y, 0.8, seed=seed)
-# x_tr = build_poly(x_tr, degree)
-# x_te = build_poly(x_te, degree)
-X = build_poly(X, degree)
+X, delete = data_preprocessing(X, percent=0.75 ,nan='delete', onehot=True)
+x_tr, x_te, y_tr, y_te = split_data(X, y, 0.8, seed=seed)
+x_tr = build_poly(x_tr, degree)
+x_te = build_poly(x_te, degree)
+# X = build_poly(X, degree)
 
 # model parameter initialization
-w = np.random.randn(X.shape[1], 1)
+w = np.random.randn(x_tr.shape[1], 1)
 
-w, loss_tr = ridge_regression(y, X, mse_loss, lambda_)
-# loss_te = mse_loss(y_te, x_te, w)
+w, loss_tr = ridge_regression(y_tr, x_tr, mse_loss, lambda_)
+loss_te = mse_loss(y_te, x_te, w)
 print(f'model training loss: {loss_tr}')
-# print(f'model testing loss: {loss_te}')
+print(f'model testing loss: {loss_te}')
 
 _, X_test, ids = load_csv_data("./data/test.csv")
-X_test = data_preprocessing(X_test, nan='mean')
+X_test, _ = data_preprocessing(X_test, nan='delete',is_test=True, delete=delete, onehot=True)
 X_test = build_poly(X_test, degree)
 y_pred = predict_labels(w, X_test)
 create_csv_submission(ids, y_pred, "submit.csv")
 
+import pandas as pd
 
+a = pd.read_csv("0.784.csv")#onehot
+b = pd.read_csv("0.796.csv")#a b corr 0.75 no onehot
+d = pd.read_csv("0.798.csv")#
+e = pd.read_csv("0.808.csv")#
+f = pd.read_csv("0.807.csv")#
+
+c = pd.read_csv("submit.csv")
+
+print("a-c: corr={corr}, diff={diff}".format(corr = a["Prediction"].corr(c["Prediction"])
+ ,diff = sum(a["Prediction"]==c["Prediction"])/len(a["Prediction"])))
+
+print("b-c: corr={corr}, diff={diff}".format(corr = b["Prediction"].corr(c["Prediction"])
+ ,diff = sum(b["Prediction"]==c["Prediction"])/len(a["Prediction"])))
+
+print("d-c: corr={corr}, diff={diff}".format(corr = d["Prediction"].corr(c["Prediction"])
+ ,diff = sum(d["Prediction"]==c["Prediction"])/len(a["Prediction"])))
+
+print("e-c: corr={corr}, diff={diff}".format(corr = e["Prediction"].corr(c["Prediction"])
+ ,diff = sum(e["Prediction"]==c["Prediction"])/len(a["Prediction"])))
+
+print("f-c: corr={corr}, diff={diff}".format(corr = f["Prediction"].corr(c["Prediction"])
+ ,diff = sum(f["Prediction"]==c["Prediction"])/len(a["Prediction"])))
 
 # model training and evaluation
+
 
 # loss_te_sum = 0
 # for k in range(k_fold):

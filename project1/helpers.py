@@ -17,7 +17,7 @@ def build_label(data):
         label[label==i]=dict_x.get(i)
     return label.astype('float64')
 
-def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
+def data_preprocessing(data, percent=1, nan = "delete", normalize = True, is_test=False, delete = [], onehot = True):
     """preprocessing data
     read in example:
     data = np.genfromtxt("./train.csv", skip_header=1, delimiter = ",")
@@ -26,11 +26,13 @@ def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
     :nomalize: whether normalize the data
     """
     #one-hot
-    classes = len(np.unique(data[:,22]))
-    targets = data[:,22].reshape(-1)
-    targets = targets.astype("int",copy=False)
-    one_hot_targets = np.eye(len(targets), classes)[targets]  
-    data = np.delete(data, 22, axis = 1)
+    
+    if onehot:
+        classes = len(np.unique(data[:,22]))
+        targets = data[:,22].reshape(-1)
+        targets = targets.astype("int",copy=False)
+        one_hot_targets = np.eye(len(targets), classes)[targets]  
+        data = np.delete(data, 22, axis = 1)
 
     #missing value
     data[data == -999] = np.nan
@@ -38,11 +40,17 @@ def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
     data = data.astype(np.float64)
 
     if nan == "delete":
-        delete = []
+        if is_test:
+            data = np.delete(data, delete, axis = 1)
+        else:
+            delete = []
+            for i in range(0,data.shape[1]):
+                tmp_percent = sum(np.isnan(data[:,i]))/len(data[:,i])
+                if tmp_percent > percent:
+                    delete.append(i)   
+            data = np.delete(data, delete, axis = 1)
         for i in range(0,data.shape[1]):
-            if np.any(np.isnan(data[:,i])):
-                delete.append(i)   
-        data = np.delete(data, delete, axis = 1)
+            np.nan_to_num(data[:,i],nan=np.nanmedian(data[:,i]),copy = False)
     elif nan == "mean":
         for i in range(0,data.shape[1]):
             np.nan_to_num(data[:,i],nan=np.nanmean(data[:,i]),copy = False)
@@ -53,8 +61,6 @@ def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
         raise Exception("Method not defined")
     if normalize:
         for i in range(0, data.shape[1]):
-            if i == 22 and nan != "delete":
-                continue  
             mean = np.mean(data[:,i])
             std = np.std(data[:,i])
             data[:,i] = (data[:,i]-mean) / std
@@ -63,11 +69,12 @@ def data_preprocessing(data, nan = "delete", normalize = True, is_test=False):
             # data[:,i] = (data[:,i]-min_value)/(max_value-min_value)
 
     
-    if is_test:
-        return data
-
-    X = np.concatenate([data,one_hot_targets], axis = 1)
-    return X
+    
+    if onehot:
+        X = np.concatenate([data,one_hot_targets], axis = 1)
+    else:
+        X = data
+    return X, delete
 
 def split_data(x, y, ratio, seed=1):
     """
