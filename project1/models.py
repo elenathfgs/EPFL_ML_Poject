@@ -109,7 +109,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Gradient descent algorithm.run
-	:param y: label data of shape either (N,) or (N,1)
+	:param y: label data of shape (N,)
     :param tx: input data of shape (N, D),eg: np.c_[np.ones((y.shape[0], 1)), x]
 	:param lambda_: weight of penalty term
     :param initial_w: initial weight vector of shape (D, 1), eg: np.zeros((tx.shape[1], 1))
@@ -118,8 +118,6 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     :param gamma: step-size
     :return: (w, loss) including final weight vector and final loss value
 		"""
-    if len(y.shape) == 1:
-        y = y.reshape(-1,1)
     # Define parameters to store w and loss
     w = initial_w
     for n_iter in range(max_iters):
@@ -127,8 +125,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         loss = compute_loss_rlr(y, tx, w, lambda_)
         w = w - gamma * w_grad
         # store w and loss
-        if (n_iter+1) % 50 == 0:
-            print("Gradient Descent({bi}/{ti}): loss={l}".format(
-              bi=n_iter + 1, ti=max_iters, l=loss))
+        print("Gradient Descent({bi}/{ti}): loss={l}".format(
+              bi=n_iter, ti=max_iters - 1, l=loss))
 
     return w, loss 
