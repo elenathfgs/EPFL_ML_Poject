@@ -11,7 +11,7 @@ First, ensure that you put `train.csv` and `test.csv` in the `data` folder at th
 Then, you can run `run.py` to create `submit.csv`, the output of our model, which provides the prediction on `test.csv`.
 
 ### `helpers.py`
-The following methods are for data processing:
+The following methods are for data processing and model optimazation:
 #### `Data Preprocessing`
 - **`build_label`**: extract label from original data.
 - **`data_norm`**: Normalize the input data.
@@ -28,7 +28,7 @@ The following methods are for data processing:
 #### `Cross-Validation Data Split`
 - **`build_k_indices`**: Build k indices for k-fold.
 - **`get_cross_validation_data`**: Return the cross validation data.
-#### `The following methods are for model optimalization`
+#### `Model Optimalization`
 - **`compute_gradient`**: Calculate the gradient.
 - **`sigmoid`**: Calculate sigmoid.
 - **`compute_loss_lr`**: Compute the cost by negative log likelihood.
