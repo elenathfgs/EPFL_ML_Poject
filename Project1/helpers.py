@@ -2,6 +2,7 @@ import numpy as np
 
 """
 data processing related methods
+* data preprocessing
 * train/test split
 * cross-validation data split
 """
@@ -24,29 +25,6 @@ def data_norm(x):
         x[:,i] = (x[:,i]-mean) / std
     return x
 
-def split_data(x, y, ratio, seed=1):
-    """
-    split the dataset based on the split ratio. If ratio is 0.8 
-    you will have 80% of your data set dedicated to training 
-    and the rest dedicated to testing
-    
-    :param x: input data of shape (N, D)
-    :param y: label data of shape (N,)
-    :param ratio: ratio of training data
-    :return x_train, x_test, y_train, y_test
-    """
-    # set seed
-    np.random.seed(seed)
-    N = x.shape[0]  # Sample num
-    shuffle_index = np.random.permutation(N)
-    tr_N = int(ratio * N)  # training data num
-    tr_index = shuffle_index[:tr_N]  # trainining data index
-    te_index = shuffle_index[tr_N:]
-    
-    x_train, x_test = x[tr_index], x[te_index]
-    y_train, y_test = y[tr_index], y[te_index]
-    return x_train, x_test, y_train, y_test
-
 def build_poly(x, degree):
     """polynomial basis functions for input data x, for j=0 up to j=degree.
 
@@ -61,43 +39,6 @@ def build_poly(x, degree):
     poly_x.append(x[:,0].reshape(-1,1)**0)  # add 1 column
 
     return np.concatenate(poly_x, axis=1)  # shape [sample, degree]
-
-def build_k_indices(y, k_fold, seed):
-    """build k indices for k-fold."""
-    num_row = y.shape[0]
-    interval = int(num_row / k_fold)
-    np.random.seed(seed)
-    indices = np.random.permutation(num_row)
-    k_indices = [indices[k * interval: (k + 1) * interval]
-                 for k in range(k_fold)]
-    return np.array(k_indices)
-
-def get_cross_validation_data(y, x, k, degree, seed, k_fold=10):
-    """return the cross validation data.
-    
-    :param k_fold: cross validation fold number
-    :param k: k-th fold for validation
-    :param degree: maximum degree for expansion
-    """
-    # get k indices
-    num_row = y.shape[0]
-    interval = int(num_row / k_fold)
-    np.random.seed(seed)
-    indices = np.random.permutation(num_row)
-    k_indices = [indices[k * interval: (k + 1) * interval]
-                 for k in range(k_fold)]
-
-    # get k'th subgroup in test, others in train:
-    tr_indices = np.concatenate([k_indices[i] for i in range(len(k_indices)) if i != k], axis=0)
-    te_indices = k_indices[k]
-    x_te, y_te = x[te_indices], y[te_indices]
-    x_tr, y_tr = x[tr_indices], y[tr_indices]
-
-    # form data with polynomial degree:
-    x_tr = feature_expansion(x_tr, degree)
-    x_te = feature_expansion(x_te, degree)
-    
-    return x_tr, x_te, y_tr, y_te
 
 def build_cross(x):
     """Build the cross multiplication term feature to the input
@@ -192,6 +133,67 @@ def remove_outliers(x, y):
     delete = np.unique(delete).astype(int)
     return np.delete(x, delete, axis = 0), np.delete(y, delete, axis = 0)
 
+def split_data(x, y, ratio, seed=1):
+    """
+    split the dataset based on the split ratio. If ratio is 0.8 
+    you will have 80% of your data set dedicated to training 
+    and the rest dedicated to testing
+    
+    :param x: input data of shape (N, D)
+    :param y: label data of shape (N,)
+    :param ratio: ratio of training data
+    :return x_train, x_test, y_train, y_test
+    """
+    # set seed
+    np.random.seed(seed)
+    N = x.shape[0]  # Sample num
+    shuffle_index = np.random.permutation(N)
+    tr_N = int(ratio * N)  # training data num
+    tr_index = shuffle_index[:tr_N]  # trainining data index
+    te_index = shuffle_index[tr_N:]
+    
+    x_train, x_test = x[tr_index], x[te_index]
+    y_train, y_test = y[tr_index], y[te_index]
+    return x_train, x_test, y_train, y_test	
+	
+def build_k_indices(y, k_fold, seed):
+    """build k indices for k-fold."""
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval]
+                 for k in range(k_fold)]
+    return np.array(k_indices)
+
+def get_cross_validation_data(y, x, k, degree, seed, k_fold=10):
+    """return the cross validation data.
+    
+    :param k_fold: cross validation fold number
+    :param k: k-th fold for validation
+    :param degree: maximum degree for expansion
+    """
+    # get k indices
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval]
+                 for k in range(k_fold)]
+
+    # get k'th subgroup in test, others in train:
+    tr_indices = np.concatenate([k_indices[i] for i in range(len(k_indices)) if i != k], axis=0)
+    te_indices = k_indices[k]
+    x_te, y_te = x[te_indices], y[te_indices]
+    x_tr, y_tr = x[tr_indices], y[tr_indices]
+
+    # form data with polynomial degree:
+    x_tr = feature_expansion(x_tr, degree)
+    x_te = feature_expansion(x_te, degree)
+    
+    return x_tr, x_te, y_tr, y_te	
+
+	
 """
 Model optimization related methods
 * loss functions
@@ -316,29 +318,6 @@ def mae_loss(y, tx, w):
     loss = np.sum(np.abs(e)) / (2 * tx.shape[0])
 
     return loss
-
-def create_csv_submission(ids, y_pred, name):
-    """
-    Creates an output file in .csv format for submission to Kaggle or AIcrowd
-    Arguments: ids (event ids associated with each prediction)
-               y_pred (predicted class labels)
-               name (string name of .csv output file to be created)
-    """
-    import csv
-    with open(name, 'w') as csvfile:
-        fieldnames = ['Id', 'Prediction']
-        writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames)
-        writer.writeheader()
-        for r1, r2 in zip(ids, y_pred):
-            writer.writerow({'Id':int(r1),'Prediction':int(r2)})
-
-def predict_labels(weights, data):
-    """Generates class predictions given weights, and a test data matrix"""
-    y_pred = np.dot(data, weights)
-    y_pred[np.where(y_pred <= 0)] = -1
-    y_pred[np.where(y_pred > 0)] = 1
-    
-    return y_pred
 
 def get_accuracy(y_pred, y_gt):
     """
