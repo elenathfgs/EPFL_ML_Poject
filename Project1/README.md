@@ -12,7 +12,7 @@ Then, you can run `run.py` to create `submit.csv`, the output of our model, whic
 
 ### `helpers.py`
 The following methods are for data processing:
-####Data Preprocessing:
+#### `Data Preprocessing`
 - **`build_label`**: extract label from original data.
 - **`data_norm`**: Normalize the input data.
 - **`build_poly`**: Polynomial basis functions for input data x, for j=0 up to j=degree.
@@ -23,12 +23,12 @@ The following methods are for data processing:
 - **`outlier_indexs`**: Return indexs of outliers of the input data.
 - **`remove_outliers`**: Remove the outliers of the input data.
 - **`feature_expansion`**: Expand features of input data by applying series of different arithmetic operations. 
-####Train/Test Split:
+#### `Train/Test Split`
 - **`split_data`**: Split the dataset based on the split ratio to get train subset and test subset from original train set.
-Cross-Validation Data Split:
+#### `Cross-Validation Data Split`
 - **`build_k_indices`**: Build k indices for k-fold.
 - **`get_cross_validation_data`**: Return the cross validation data.
-####The following methods are for model optimalization:
+#### `The following methods are for model optimalization`
 - **`compute_gradient`**: Calculate the gradient.
 - **`sigmoid`**: Calculate sigmoid.
 - **`compute_loss_lr`**: Compute the cost by negative log likelihood.
