@@ -17,64 +17,12 @@ def build_label(data):
         label[label==i]=dict_x.get(i)
     return label.astype('float64')
 
-def data_preprocessing(data, percent=1, nan = "delete", normalize = True, is_test=False, delete = [], onehot = True):
-    """preprocessing data
-    read in example:
-    data = np.genfromtxt("./train.csv", skip_header=1, delimiter = ",")
-    :param data: original data from csv
-    :param nan: method to deal with NAN value (delete,mean,median)
-    :nomalize: whether normalize the data
-    """
-    #one-hot
-    
-    if onehot:
-        classes = len(np.unique(data[:,22]))
-        targets = data[:,22].reshape(-1)
-        targets = targets.astype("int",copy=False)
-        one_hot_targets = np.eye(len(targets), classes)[targets]  
-        data = np.delete(data, 22, axis = 1)
-
-    #missing value
-    data[data == -999] = np.nan
-    data[data == 0.0] = np.nan
-    data = data.astype(np.float64)
-
-    if nan == "delete":
-        if is_test:
-            data = np.delete(data, delete, axis = 1)
-        else:
-            delete = []
-            for i in range(0,data.shape[1]):
-                tmp_percent = sum(np.isnan(data[:,i]))/len(data[:,i])
-                if tmp_percent > percent:
-                    delete.append(i)   
-            data = np.delete(data, delete, axis = 1)
-        for i in range(0,data.shape[1]):
-            np.nan_to_num(data[:,i],nan=np.nanmedian(data[:,i]),copy = False)
-    elif nan == "mean":
-        for i in range(0,data.shape[1]):
-            np.nan_to_num(data[:,i],nan=np.nanmean(data[:,i]),copy = False)
-    elif nan == "median":
-        for i in range(0,data.shape[1]):
-            np.nan_to_num(data[:,i],nan=np.nanmedian(data[:,i]),copy = False)
-    else:
-        raise Exception("Method not defined")
-    if normalize:
-        for i in range(0, data.shape[1]):
-            mean = np.mean(data[:,i])
-            std = np.std(data[:,i])
-            data[:,i] = (data[:,i]-mean) / std
-            # min_value = min(data[:,i])
-            # max_value = max(data[:,i])
-            # data[:,i] = (data[:,i]-min_value)/(max_value-min_value)
-
-    
-    
-    if onehot:
-        X = np.concatenate([data,one_hot_targets], axis = 1)
-    else:
-        X = data
-    return X, delete
+def data_norm(x):
+    for i in range(0, x.shape[1]):
+        mean = np.mean(x[:,i])
+        std = np.std(x[:,i])
+        x[:,i] = (x[:,i]-mean) / std
+    return x
 
 def split_data(x, y, ratio, seed=1):
     """
@@ -108,8 +56,9 @@ def build_poly(x, degree):
 		"""
     # polynomial basis function:
     poly_x = []
-    for j in range(degree+1):
+    for j in range(1, degree+1):
         poly_x.append(x**j)
+    poly_x.append(x[:,0].reshape(-1,1)**0)  # add 1 column
 
     return np.concatenate(poly_x, axis=1)  # shape [sample, degree]
 
@@ -145,10 +94,103 @@ def get_cross_validation_data(y, x, k, degree, seed, k_fold=10):
     x_tr, y_tr = x[tr_indices], y[tr_indices]
 
     # form data with polynomial degree:
-    x_tr = build_poly(x_tr, degree)
-    x_te = build_poly(x_te, degree)
+    x_tr = feature_expansion(x_tr, degree)
+    x_te = feature_expansion(x_te, degree)
     
     return x_tr, x_te, y_tr, y_te
+
+def build_cross(x):
+    """Build the cross multiplication term feature to the input
+
+    :param x: input x with shape (N,D)
+    """
+    cross_x = []
+    for i in range(x.shape[1]):
+        for j in range(x.shape[1]):
+            if(i != j):
+                cross_x.append((x[:,i]*x[:,j]).reshape(x.shape[0],1))
+    return np.concatenate(cross_x, axis=1) 
+
+def build_sqrt(x):
+    """Expand the input with absolute sqrt operation
+
+    :param x: input x with shape (N,D)
+    """
+    sqrt_x = x
+    sqrt_x[x>0] = np.sqrt(x[x>0])
+    sqrt_x[x==0] = 0
+    sqrt_x[x<0] = (-1)*np.sqrt((-1)*x[x<0])
+
+    return sqrt_x
+
+def build_log(x):
+    """
+    Expand the input with absolute log operation
+    
+    :param x: input x with shape (N,D)
+    """
+    log_x = x
+    log_x[x>0] = np.log(x[x>0])
+    log_x[x==0] = 0
+    log_x[x<0] = (-1)*np.log((-1)*x[x<0])
+    return log_x
+    
+
+def feature_expansion(x, degree):
+    """
+    Do feature expansions as:
+    1. build poly term
+    2. build log term
+    3. build square root term
+    4. build sin and cos term
+    5. build cross multiplication term
+    """
+    new_features = []
+    #build poly
+    poly_x = build_poly(x, degree)
+    new_features.append(poly_x)
+    #build log
+    log_x = build_log(x)
+    new_features.append(log_x)
+    #build square root
+    sr_x = build_sqrt(x)
+    new_features.append(sr_x)
+    #build sin and cos
+    sin_x = np.sin(x)
+    new_features.append(sin_x)
+    cos_x = np.cos(x)
+    new_features.append(cos_x)
+    #build cross
+    cross_x = build_cross(x)
+    new_features.append(cross_x)
+    return np.concatenate(new_features, axis=1)
+
+def outlier_indexs(x):
+    """
+    get the indices of outliers
+    
+    :param x: input x with shape (N,D)
+    """
+    ##copy, need to be replaced
+    Q1, Q3 = np.percentile(x, [25, 75])
+    IQR = Q3-Q1
+    lower_bound = Q1 - (10 * IQR)
+    upper_bound = Q3 + (10 * IQR)
+    outlier_index = np.where((x < lower_bound) | (x > upper_bound))
+    return outlier_index[0]
+
+
+def remove_outliers(x, y):
+    """
+    remove outliers using indices
+    """
+    delete = []
+    for i in range(x.shape[1]):
+        indexs = outlier_indexs(x[:,i])
+        delete.append(indexs)
+    delete = np.concatenate(delete, axis=0)
+    delete = np.unique(delete).astype(int)
+    return np.delete(x, delete, axis = 0), np.delete(y, delete, axis = 0)
 
 """
 Model optimization related methods
@@ -185,7 +227,7 @@ def compute_loss_lr(y, tx, w):
     :param tx: input data of shape (N, D)
     :param w: model weights of shape (1, D)
     """
-    pred = sigmoid(tx.dot(w))
+    pred = sigmoid(tx.dot(w)).squeeze()
     loss = y.T.dot(np.log(pred)) + (1 - y).T.dot(np.log(1 - pred))
     return np.squeeze(- loss)
 
@@ -196,7 +238,7 @@ def compute_gradient_lr(y, tx, w):
     :param tx: input data of shape (N, D)
     :param w: model weights of shape (1, D)
     """
-    pred = sigmoid(tx.dot(w))
+    pred = sigmoid(tx.dot(w)).squeeze()
     gradient = tx.T.dot(pred - y)
     return gradient
 
@@ -297,3 +339,10 @@ def predict_labels(weights, data):
     y_pred[np.where(y_pred > 0)] = 1
     
     return y_pred
+
+def get_accuracy(y_pred, y_gt):
+    """
+    Get the accuracy of predictions based on the ground-truth
+    """
+    return (y_pred == y_gt).sum() / y_gt.shape[0]
+

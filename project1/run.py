@@ -1,109 +1,96 @@
-from helpers import data_preprocessing, get_cross_validation_data, compute_loss_rlr, \
- mse_loss, sigmoid, build_poly, split_data, mae_loss
-from models import reg_logistic_regression, ridge_regression
+from numpy.core.fromnumeric import size
+from helpers import get_cross_validation_data, compute_loss_rlr, \
+ mse_loss, sigmoid, build_poly, split_data, mae_loss, data_norm, feature_expansion, remove_outliers, get_accuracy
+from implementations import ridge_regression
 from proj1_helpers import load_csv_data, create_csv_submission, predict_labels
 
 import numpy as np
 
-# set hyper-parameters
-# see experiment.ipynb for parameters choose details
-seed = 2021
-degree = 10#7
-lambda_ = 5e-3#1e-4
+def train(X, y, degree, lambda_):
+    """train the ridge regression model using full dataset
+    
+    :param tx: input data of shape (N, D)
+    :param y: label data of shape (N,)
+    :param degree: degree for build_poly, expand features
+    :param lambda_: weight of penalty term
+    :return: w: final weight vector
+    """
+    seed = 2021
+    # Use the grid-searched hyper-parameters for full dataset training
+    x_tr, x_te, y_tr, y_te = split_data(X, y, 1, seed=seed)
+    x_tr = feature_expansion(x_tr, degree)
+    x_te = feature_expansion(x_te, degree)
 
-# load and preprocess data
-y, X, _ = load_csv_data("./data/train.csv")
-X, delete = data_preprocessing(X, percent=0.75 ,nan='delete', onehot=True)
-x_tr, x_te, y_tr, y_te = split_data(X, y, 0.8, seed=seed)
-print("x_tr")
-print(np.shape(x_tr))
-x_tr = build_poly(x_tr, degree)
-print("x_tr")
-print(np.shape(x_tr))
-x_te = build_poly(x_te, degree)
-# X = build_poly(X, degree)
+    # model parameter initialization
+    w = np.random.randn(x_tr.shape[1], 1)
 
-# model parameter initialization
-w = np.random.randn(x_tr.shape[1], 1)
+    w, loss = ridge_regression(y_tr, x_tr, lambda_)
 
-w, loss_tr = ridge_regression(y_tr, x_tr, mse_loss, lambda_)
-loss_te = mse_loss(y_te, x_te, w)
-print(f'model training loss: {loss_tr}')
-print(f'model testing loss: {loss_te}')
+    return w, loss
 
-_, X_test, ids = load_csv_data("./data/test.csv")
-X_test, _ = data_preprocessing(X_test, nan='delete',is_test=True, delete=delete, onehot=True)
-X_test = build_poly(X_test, degree)
-y_pred = predict_labels(w, X_test)
-create_csv_submission(ids, y_pred, "submit.csv")
+# grid-searched best hyper-parameters for each of the subgroup model
+degrees = [7, 10, 11]
+lambdas = [1e-5, 1e-5, 1e-5]
 
-import pandas as pd
+#load data and split it according to the column named PRI_ject_num
+y, X, ids = load_csv_data("data/train.csv") 
+kind = X[:,-8]
 
-a = pd.read_csv("0.784.csv")#onehot
-b = pd.read_csv("0.796.csv")#a b corr 0.75 no onehot
-d = pd.read_csv("0.798.csv")#
-e = pd.read_csv("0.808.csv")#
-f = pd.read_csv("0.807.csv")#
-g = pd.read_csv("0.816.csv")
-h = pd.read_csv("0.820.csv")
-c = pd.read_csv("submit.csv")
+#get index set of different PRI_ject_num(0, 1, 2&3)
+set0 = np.where(kind == 0)
+set1 = np.where(kind == 1)
+set2_3 = np.where((kind == 2)|(kind == 3))
 
-print("a-c: corr={corr}, diff={diff}".format(corr = a["Prediction"].corr(c["Prediction"])
- ,diff = sum(a["Prediction"]==c["Prediction"])/len(a["Prediction"])))
+#delete the columns that are meaningless or uncomputable based on specific PRI_ject_num
+#collect data sets(specific row groups) according to different PRI_ject_num
+zero_delete_col = [4, 5, 6, 12, 22, 23, 24, 25, 26, 27, 28, 29] 
+one_delete_col = [4, 5, 6, 12, 22, 26, 27, 28]
 
-print("b-c: corr={corr}, diff={diff}".format(corr = b["Prediction"].corr(c["Prediction"])
- ,diff = sum(b["Prediction"]==c["Prediction"])/len(a["Prediction"])))
-
-print("d-c: corr={corr}, diff={diff}".format(corr = d["Prediction"].corr(c["Prediction"])
- ,diff = sum(d["Prediction"]==c["Prediction"])/len(a["Prediction"])))
-
-print("e-c: corr={corr}, diff={diff}".format(corr = e["Prediction"].corr(c["Prediction"])
- ,diff = sum(e["Prediction"]==c["Prediction"])/len(a["Prediction"])))
-
-print("f-c: corr={corr}, diff={diff}".format(corr = f["Prediction"].corr(c["Prediction"])
- ,diff = sum(f["Prediction"]==c["Prediction"])/len(a["Prediction"])))
-
-print("g-c: corr={corr}, diff={diff}".format(corr = g["Prediction"].corr(c["Prediction"])
- ,diff = sum(g["Prediction"]==c["Prediction"])/len(a["Prediction"])))
-
-print("h-c: corr={corr}, diff={diff}".format(corr = h["Prediction"].corr(c["Prediction"])
- ,diff = sum(h["Prediction"]==c["Prediction"])/len(a["Prediction"])))
-
-# model training and evaluation
+X0 = np.delete(X, zero_delete_col, axis = 1)[set0,:].squeeze()
+y0 = y[set0]
+X1 = np.delete(X, one_delete_col, axis = 1)[set1,:].squeeze()
+y1 = y[set1]
+X2_3 = X[set2_3,:].squeeze()
+y2_3 = y[set2_3]
 
 
-# loss_te_sum = 0
-# for k in range(k_fold):
-#     print(f"fold {k}/{k_fold}")
-#     x_tr, x_te, y_tr, y_te = get_cross_validation_data(y, x, k, degree, seed, k_fold)
-#     y_tr = y_tr.reshape(-1,1)
-#     y_te = y_te.reshape(-1,1)
+#train different models based on different PRI_ject_num
+w0, loss1 = train(X0, y0, degrees[0], lambdas[0])
+w1, loss2 = train(X1, y1, degrees[1], lambdas[1])
+w2_3, loss3 = train(X2_3, y2_3, degrees[2], lambdas[2])
+print(f'loss for subset 1 is {loss1}')
+print(f'loss for subset 2 is {loss2}')
+print(f'loss for subset 3 is {loss3}')
 
-#     # model parameter initialization
-#     w = np.random.randn(x_tr.shape[1], 1)
+print('\n finish training, start predicting results ...')
 
-#     w, loss_tr = reg_logistic_regression(y_tr, x_tr, lambda_, w, max_iters=max_iters, gamma=gamma)
-#     loss_te = compute_loss_rlr(y_te, x_te, w, lambda_)
-#     # w, loss_tr = ridge_regression(y_tr, x_tr, mse_loss, lambda_)
-#     # loss_te = mse_loss(y_te, x_te, w)
-#     loss_te_sum += loss_te
+#make predictions based on different models and concact them
+y, X_test, ids_test = load_csv_data("data/test.csv") 
 
+#get index set of different PRI_ject_num(0, 1, 2&3)
+kind = X_test[:,-8]
+set0 = np.where(kind == 0)
+set1 = np.where(kind == 1)
+set2_3 = np.where((kind == 2)|(kind == 3))
 
+#delete the columns that are meaningless or uncomputable based on specific PRI_ject_num
+#collect data sets(specific row groups) according to different PRI_ject_num
+X0 = np.delete(X_test, zero_delete_col, axis = 1)[set0,:].squeeze()
+X0 = feature_expansion(X0, degrees[0])
+y[set0] = np.dot(X0, w0)
 
-# y_tr = y_tr.reshape(-1,1)
-# y_te = y_te.reshape(-1,1)
-# w, loss_tr = reg_logistic_regression(y_tr, x_tr, lambda_, w, max_iters=max_iters, gamma=gamma)
-# loss_te = compute_loss_rlr(y_te, x_te, w, lambda_)
+X1 = np.delete(X_test, one_delete_col, axis = 1)[set1,:].squeeze()
+X1 = feature_expansion(X1, degrees[1])
+y[set1] = np.dot(X1,w1)
 
+X2_3 = X_test[set2_3,:].squeeze()
+X2_3 = feature_expansion(X2_3, degrees[2])
+y[set2_3] = np.dot(X2_3,w2_3)
 
+#create labels
+y[np.where(y <= 0)] = -1
+y[np.where(y > 0)] = 1
 
-# loss_te_avg = loss_te_sum / k_fold
-# print(f'model evaluation loss: {loss_te_avg}')
+create_csv_submission(ids_test, y, "submit.csv")
+print('\nResult generated as submit.csv!')
 
-# test_data = np.genfromtxt("data/test.csv", skip_header=1, delimiter = ",", dtype="str")
-# x_te = data_preprocessing(test_data, nan='delete', is_test=True)
-# x_te = build_poly(x_te, degree)
-# # pred = sigmoid(x_te.dot(w))
-# # pred = [0 if x<0.5 else 1 for x in pred]
-# pred = predict_labels(w, x_te)
-# create_csv_submission(ids=list(range(350000,918237+1)), y_pred=pred, name="submit.csv")
