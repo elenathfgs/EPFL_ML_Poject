@@ -6,7 +6,7 @@ We take part in the [competion](https://www.aicrowd.com/challenges/epfl-machine-
 
 The following information mainly focus on explaining our code.
 
-First, ensure that you put `train.csv` and `test.csv` in the `data` folder at the root of this repository.
+First, ensure that you put `train.csv` and `test.csv` in the `data` folder at the root of `Project1` folder.
 
 Then, you can run `run.py` to create `submit.csv`, the output of our model, which provides the prediction on `test.csv`.
 
