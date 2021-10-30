@@ -1,10 +1,16 @@
-## Machine Learning - Project 1(Team: SeaStar)
+## Machine Learning - Project 1 (Team: SeaStar)
 
 In this repository, you can find our work for the Project 1 of the [Machine Learning](https://github.com/epfml/ML_course) at [EPFL](http://epfl.ch). The background of the project could be found [here](https://higgsml.lal.in2p3.fr/files/2014/04/documentation_v1.8.pdf.)
 
 We take part in the [competion](https://www.aicrowd.com/challenges/epfl-machine-learning-higgs/leaderboards) and got an accuracy of 83.1%.
 
-This file mainly focus on explaining our code.
+### `EPFL_ML_P1.pdf`
+This pdf file is our final report, which exaplains our work in details.
+
+### `experiments.ipynb`
+This file contains the code of our experiments, which could reproduce the resuls shown in the report, including tables and figures. 
+
+The following information mainly focus on explaining our code.
 
 First, ensure that you put `train.csv` and `test.csv` in the `data` folder at the root of this repository.
 
