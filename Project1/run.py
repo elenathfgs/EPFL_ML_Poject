@@ -28,6 +28,9 @@ def train(X, y, degree, lambda_):
 
     return w, loss
 
+# set the random seed
+np.random.seed(2021)
+
 # grid-searched best hyper-parameters for each of the subgroup model
 degrees = [7, 10, 11]
 lambdas = [1e-5, 1e-5, 1e-5]
