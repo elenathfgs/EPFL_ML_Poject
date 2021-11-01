@@ -7,7 +7,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     :param y: label data of shape (N,)
     :param tx: input data of shape (N, D)
     :param initial_w: initial weight vector of shape (1, D)
-	:param max_iters: Maximum number of iterations
+    :param max_iters: Maximum number of iterations
     :param gamma: step-size
     :return: (w, loss): final weight vector and loss value
     """
@@ -48,10 +48,10 @@ def least_squares_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
 def least_squares(y, tx):
     """calculate the least squares solution.
 
-	:param y: label data of shape (N,)
+    :param y: label data of shape (N,)
     :param tx: input data of shape (N, D)
-	:param loss_func: function object, which loss function to use
-	:return: (w, loss): final weight vector and loss value
+    :param loss_func: function object, which loss function to use
+    :return: (w, loss): final weight vector and loss value
     """
     if len(y.shape) > 1:
         y = y.squeeze()
@@ -110,9 +110,9 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Gradient descent algorithm.run
-	:param y: label data of shape (N,)
+    :param y: label data of shape (N,)
     :param tx: input data of shape (N, D),eg: np.c_[np.ones((y.shape[0], 1)), x]
-	:param lambda_: weight of penalty term
+    :param lambda_: weight of penalty term
     :param initial_w: initial weight vector of shape (D, 1), eg: np.zeros((tx.shape[1], 1))
     :param batch_size: the size of batch, 1 for stochastic gradient
     :param max_iters: Maximum number of iterations
